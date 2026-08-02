@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowUpRight, DollarSign, Activity, FileText, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useWalletStore } from "@/lib/store";
 
 const activeProposals = [
   { id: "P-104", title: "Monthly Server Hosting", amount: 150, currency: "USDC", status: "Pending Approval", approvals: 0 },
@@ -22,6 +24,18 @@ const members = [
 ];
 
 export default function Dashboard() {
+  const { address, disconnectWallet } = useWalletStore();
+  const router = useRouter();
+
+  const handleDisconnect = () => {
+    disconnectWallet();
+    router.push("/");
+  };
+
+  const displayAddress = address 
+    ? `${address.substring(0, 4)}...${address.substring(address.length - 4)}`
+    : "Not Connected";
+
   return (
     <div className="min-h-screen bg-black text-zinc-50 selection:bg-purple-500/30 font-sans pb-12">
       {/* Navbar */}
@@ -33,8 +47,10 @@ export default function Dashboard() {
           <span className="font-semibold text-lg text-zinc-100">Dashboard</span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-zinc-400 hidden sm:block">Connected: <span className="text-purple-400 font-mono">GBAX...9T2Q</span></div>
-          <Button variant="outline" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300">
+          <div className="text-sm text-zinc-400 hidden sm:block">
+            Connected: <span className="text-purple-400 font-mono">{displayAddress}</span>
+          </div>
+          <Button onClick={handleDisconnect} variant="outline" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300">
             Disconnect
           </Button>
         </div>
