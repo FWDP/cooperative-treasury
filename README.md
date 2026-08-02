@@ -17,6 +17,20 @@ With a beautiful, glassmorphic UI built in Next.js, the Cooperative Treasury sim
 - **State Management:** Zustand
 - **Web3 Integration:** `@stellar/stellar-sdk`, `@stellar/freighter-api`
 
+## White Belt Submission Screenshots:
+
+### Wallet Connected State
+![Wallet Connected State](./public/docs/wallet-connected-state.png)
+
+### Balance displayed
+![Balance displayed](./public/docs/wallet-balance.png)
+
+### Successful testnet transaction
+![Successful testnet transaction](./public/docs/successful-testnet-transaction.png)
+
+### The transaction result is shown to the user
+![The transaction result is shown to the user](./public/docs/successful-transaction-redirect-trace.png)
+
 ---
 
 ## Local Development Setup
