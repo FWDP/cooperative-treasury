@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { isConnected, requestAccess } from '@stellar/freighter-api';
 import { Horizon } from '@stellar/stellar-sdk';
 
@@ -15,8 +16,10 @@ interface WalletState {
   fetchBalance: () => Promise<void>;
 }
 
-export const useWalletStore = create<WalletState>((set, get) => ({
-  address: null,
+export const useWalletStore = create<WalletState>()(
+  persist(
+    (set, get) => ({
+      address: null,
   balance: null,
   isConnecting: false,
   isFetchingBalance: false,
@@ -60,4 +63,10 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       set({ balance: "0.00", isFetchingBalance: false });
     }
   }
-}));
+    }),
+    {
+      name: 'wallet-storage',
+      partialize: (state) => ({ address: state.address }),
+    }
+  )
+);

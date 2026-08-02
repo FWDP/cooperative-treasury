@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,8 +25,13 @@ const members = [
 ];
 
 export default function Dashboard() {
-  const { address, balance, fetchBalance, disconnectWallet, isFetchingBalance } = useWalletStore();
+  const { address, balance, fetchBalance, disconnectWallet, isFetchingBalance, isConnecting } = useWalletStore();
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (address) {
@@ -54,8 +59,13 @@ export default function Dashboard() {
           <span className="font-semibold text-lg text-zinc-100">Dashboard</span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-zinc-400 hidden sm:block">
-            Connected: <span className="text-purple-400 font-mono">{displayAddress}</span>
+          <div className="text-sm text-zinc-400 hidden sm:flex items-center">
+            Connected: 
+            {!isMounted || isConnecting ? (
+              <span className="inline-block h-4 w-24 bg-zinc-800/80 rounded animate-pulse ml-2"></span>
+            ) : (
+              <span className="text-purple-400 font-mono ml-2">{displayAddress}</span>
+            )}
           </div>
           <Button onClick={handleDisconnect} variant="outline" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300">
             Disconnect
