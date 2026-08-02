@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowUpRight, DollarSign, Activity, FileText, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useWalletStore } from "@/lib/store";
 
 const activeProposals = [
   { id: "P-104", title: "Monthly Server Hosting", amount: 150, currency: "USDC", status: "Pending Approval", approvals: 0 },
@@ -22,6 +25,29 @@ const members = [
 ];
 
 export default function Dashboard() {
+  const { address, balance, fetchBalance, disconnectWallet, isFetchingBalance, isConnecting } = useWalletStore();
+  const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (address) {
+      fetchBalance();
+    }
+  }, [address, fetchBalance]);
+
+  const handleDisconnect = () => {
+    disconnectWallet();
+    router.push("/");
+  };
+
+  const displayAddress = address 
+    ? `${address.substring(0, 4)}...${address.substring(address.length - 4)}`
+    : "Not Connected";
+
   return (
     <div className="min-h-screen bg-black text-zinc-50 selection:bg-purple-500/30 font-sans pb-12">
       {/* Navbar */}
@@ -33,8 +59,15 @@ export default function Dashboard() {
           <span className="font-semibold text-lg text-zinc-100">Dashboard</span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-zinc-400 hidden sm:block">Connected: <span className="text-purple-400 font-mono">GBAX...9T2Q</span></div>
-          <Button variant="outline" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300">
+          <div className="text-sm text-zinc-400 hidden sm:flex items-center">
+            Connected: 
+            {!isMounted || isConnecting ? (
+              <span className="inline-block h-4 w-24 bg-zinc-800/80 rounded animate-pulse ml-2"></span>
+            ) : (
+              <span className="text-purple-400 font-mono ml-2">{displayAddress}</span>
+            )}
+          </div>
+          <Button onClick={handleDisconnect} variant="outline" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300">
             Disconnect
           </Button>
         </div>
@@ -77,8 +110,12 @@ export default function Dashboard() {
                 <Activity className="w-4 h-4 text-purple-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-white">12,840.50</div>
-                <p className="text-xs text-zinc-500 mt-1">~ $1,155.64 USD</p>
+                {isFetchingBalance ? (
+                  <div className="h-9 w-32 bg-zinc-800/80 rounded animate-pulse my-1"></div>
+                ) : (
+                  <div className="text-3xl font-bold text-white">{balance ? parseFloat(balance).toFixed(2) : "0.00"}</div>
+                )}
+                <p className="text-xs text-zinc-500 mt-1">Live Testnet Balance</p>
               </CardContent>
             </Card>
           </motion.div>

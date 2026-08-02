@@ -9,8 +9,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle2, Copy, FileText, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, FileText, Send, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { useWalletStore } from "@/lib/store";
+import { signTransaction } from "@stellar/freighter-api";
+import { TransactionBuilder, Networks, Asset, Operation, Horizon } from "@stellar/stellar-sdk";
 
 export default function ProposalDetailsPage() {
   const params = useParams();
@@ -18,23 +21,72 @@ export default function ProposalDetailsPage() {
   
   // Mock Data for prototype
   const [hasApproved, setHasApproved] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const { address } = useWalletStore();
+
   const proposalId = params.id as string;
   const proposal = {
     id: proposalId || "P-104",
     title: "Monthly Server Hosting",
     description: "This proposal requests funds to cover our AWS and Vercel hosting costs for the upcoming month. The infrastructure supports our cooperative governance portal.",
     amount: 150.00,
-    currency: "USDC",
-    recipientAddress: "GBX...7L9M",
+    currency: "XLM",
+    recipientAddress: "GDTV7FLX7A6AON2B7AG4SLZ6QMLNTTL6YNJAAKNTRY3HDPTZ5AQYTNII",
     creator: "Alice (Treasurer)",
     createdAt: "Oct 24, 2023",
-    status: hasApproved ? "Approved" : "Pending Approval",
+    status: txHash ? "Executed" : (hasApproved ? "Approved" : "Pending Approval"),
     approvalsCount: hasApproved ? 1 : 0,
     requiredApprovals: 1
   };
 
   const handleApprove = () => {
     setHasApproved(true);
+  };
+
+  const handleExecute = async () => {
+    if (!address) {
+      alert("Please connect your wallet first.");
+      return;
+    }
+    
+    setIsExecuting(true);
+    try {
+      const server = new Horizon.Server("https://horizon-testnet.stellar.org");
+      const account = await server.loadAccount(address);
+      const fee = await server.fetchBaseFee();
+
+      const transaction = new TransactionBuilder(account, {
+        fee: fee.toString(),
+        networkPassphrase: Networks.TESTNET,
+      })
+      .addOperation(Operation.payment({
+        destination: proposal.recipientAddress, // Using connected address as recipient to guarantee it exists for testing
+        asset: Asset.native(),
+        amount: proposal.amount.toString(),
+      }))
+      .setTimeout(30)
+      .build();
+
+      const signedTx = await signTransaction(transaction.toXDR(), { networkPassphrase: Networks.TESTNET });
+      
+      if (signedTx.error) {
+        throw new Error(signedTx.error);
+      }
+      
+      const transactionToSubmit = TransactionBuilder.fromXDR(signedTx.signedTxXdr, Networks.TESTNET);
+      const response = await server.submitTransaction(transactionToSubmit);
+      
+      setTxHash(response.hash);
+      
+    } catch (error: any) {
+      console.error(error);
+      const horizonError = error.response?.data?.extras?.result_codes?.transaction 
+        || error.response?.data?.extras?.result_codes?.operations?.join(", ");
+      alert("Transaction failed: " + (horizonError || error.message || JSON.stringify(error)));
+    } finally {
+      setIsExecuting(false);
+    }
   };
 
   return (
@@ -129,15 +181,32 @@ export default function ProposalDetailsPage() {
                     )}
                   </div>
                 </CardContent>
-                <CardFooter className="bg-zinc-900/20 border-t border-zinc-800/50 pt-6">
+                <CardFooter className="bg-zinc-900/20 border-t border-zinc-800/50 pt-6 flex-col gap-3">
                   {!hasApproved ? (
                     <Button onClick={handleApprove} className="w-full bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.3)] gap-2">
                       <FileText className="w-4 h-4" /> Sign & Approve
                     </Button>
                   ) : (
-                    <Button disabled className="w-full bg-green-600/20 text-green-500 border border-green-500/50 gap-2 opacity-100">
-                      <CheckCircle2 className="w-4 h-4" /> Ready to Execute
+                    <Button 
+                      onClick={handleExecute} 
+                      disabled={isExecuting || txHash !== null}
+                      className="w-full bg-green-600/20 text-green-500 border border-green-500/50 gap-2 opacity-100 hover:bg-green-600/30 transition-colors"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> 
+                      {isExecuting ? "Executing on testnet..." : txHash ? "Executed" : "Ready to Execute (Send XLM)"}
                     </Button>
+                  )}
+                  {txHash && (
+                    <div className="w-full text-center mt-2">
+                      <a 
+                        href={`https://stellar.expert/explorer/testnet/tx/${txHash}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-xs text-purple-400 hover:text-purple-300 flex items-center justify-center gap-1"
+                      >
+                        View Transaction on Stellar Expert <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
                   )}
                 </CardFooter>
               </Card>

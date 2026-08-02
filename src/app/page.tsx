@@ -1,11 +1,29 @@
 "use client";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { ArrowRight, Shield, PieChart, Users } from "lucide-react";
+import { useWalletStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
+  const { address, connectWallet, isConnecting } = useWalletStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (address) {
+      router.push("/dashboard");
+    }
+  }, [address, router]);
+
+  const handleConnect = async () => {
+    if (!address) {
+      await connectWallet();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-zinc-50 selection:bg-purple-500/30 overflow-hidden relative font-sans">
       {/* Background Glow Effects - purple accents on black */}
@@ -26,8 +44,8 @@ export default function LandingPage() {
             <a href="#" className="hover:text-purple-400 transition-colors">Treasury</a>
             <a href="#" className="hover:text-purple-400 transition-colors">Community</a>
           </div>
-          <Button className="bg-purple-600 hover:bg-purple-500 text-white border-0 shadow-[0_0_15px_rgba(147,51,234,0.3)] transition-all">
-            Connect Wallet
+          <Button onClick={handleConnect} disabled={isConnecting} className="bg-purple-600 hover:bg-purple-500 text-white border-0 shadow-[0_0_15px_rgba(147,51,234,0.3)] transition-all">
+            {isConnecting ? "Connecting..." : address ? "Go to Dashboard" : "Connect Wallet"}
           </Button>
         </div>
       </nav>
