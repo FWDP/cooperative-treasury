@@ -134,9 +134,11 @@ export default function Dashboard() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20">
-                            View <ArrowUpRight className="ml-1 w-3 h-3" />
-                          </Button>
+                          <Link href={`/dashboard/proposals/${proposal.id}`}>
+                            <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20">
+                              View <ArrowUpRight className="ml-1 w-3 h-3" />
+                            </Button>
+                          </Link>
                         </TableCell>
                       </TableRow>
                     ))}
