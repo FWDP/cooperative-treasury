@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowUpRight, DollarSign, Activity, FileText, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 const activeProposals = [
   { id: "P-104", title: "Monthly Server Hosting", amount: 150, currency: "USDC", status: "Pending Approval", approvals: 0 },
@@ -47,9 +48,11 @@ export default function Dashboard() {
             <h1 className="text-3xl font-serif font-bold text-white tracking-tight">FWDP Cooperative</h1>
             <p className="text-zinc-400 mt-1">Manage treasury funds, proposals, and approvals.</p>
           </div>
-          <Button className="bg-purple-600 hover:bg-purple-500 text-white border-0 shadow-[0_0_15px_rgba(147,51,234,0.3)] gap-2">
-            <FileText className="w-4 h-4" /> Create Proposal
-          </Button>
+          <Link href="/dashboard/create-proposal">
+            <Button className="bg-purple-600 hover:bg-purple-500 text-white border-0 shadow-[0_0_15px_rgba(147,51,234,0.3)] gap-2">
+              <FileText className="w-4 h-4" /> Create Proposal
+            </Button>
+          </Link>
         </div>
 
         {/* Top Cards */}
