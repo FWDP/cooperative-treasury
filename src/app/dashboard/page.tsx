@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,8 +25,14 @@ const members = [
 ];
 
 export default function Dashboard() {
-  const { address, disconnectWallet } = useWalletStore();
+  const { address, balance, fetchBalance, disconnectWallet, isFetchingBalance } = useWalletStore();
   const router = useRouter();
+
+  useEffect(() => {
+    if (address) {
+      fetchBalance();
+    }
+  }, [address, fetchBalance]);
 
   const handleDisconnect = () => {
     disconnectWallet();
@@ -93,8 +100,12 @@ export default function Dashboard() {
                 <Activity className="w-4 h-4 text-purple-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-white">12,840.50</div>
-                <p className="text-xs text-zinc-500 mt-1">~ $1,155.64 USD</p>
+                {isFetchingBalance ? (
+                  <div className="h-9 w-32 bg-zinc-800/80 rounded animate-pulse my-1"></div>
+                ) : (
+                  <div className="text-3xl font-bold text-white">{balance ? parseFloat(balance).toFixed(2) : "0.00"}</div>
+                )}
+                <p className="text-xs text-zinc-500 mt-1">Live Testnet Balance</p>
               </CardContent>
             </Card>
           </motion.div>
