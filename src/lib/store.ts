@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { isConnected, requestAccess } from '@stellar/freighter-api';
-import { Horizon } from '@stellar/stellar-sdk';
+import { isConnected, requestAccess, signTransaction } from '@stellar/freighter-api';
+import { Horizon, TransactionBuilder, Account, Networks, Operation } from '@stellar/stellar-sdk';
+import { signIn, signOut } from 'next-auth/react';
 
 const server = new Horizon.Server("https://horizon-testnet.stellar.org");
 
@@ -34,8 +35,45 @@ export const useWalletStore = create<WalletState>()(
         if (accessRes.error) {
           set({ error: accessRes.error || "Access denied by user.", isConnecting: false });
         } else if (accessRes.address) {
-          set({ address: accessRes.address, isConnecting: false });
-          get().fetchBalance();
+          const address = accessRes.address;
+          const message = `Sign in to Cooperative Treasury: ${Date.now()}`;
+          
+          try {
+            // SEP-10 style challenge transaction
+            const tx = new TransactionBuilder(
+              new Account(address, "0"), 
+              { fee: "100", networkPassphrase: Networks.TESTNET }
+            )
+            .addOperation(Operation.manageData({ name: "auth", value: message.substring(0, 64) }))
+            .setTimeout(300)
+            .build();
+            
+            const xdr = tx.toXDR();
+            
+            const signRes = await signTransaction(xdr, { networkPassphrase: Networks.TESTNET });
+            
+            if (signRes.error) {
+              set({ error: signRes.error, isConnecting: false });
+              return;
+            }
+
+            const authRes = await signIn("credentials", {
+              address,
+              message, // We can still pass message for logging
+              signature: signRes.signedTxXdr, // pass the signed XDR
+              redirect: false,
+            });
+
+            if (authRes?.error) {
+              set({ error: "Authentication failed. Invalid signature.", isConnecting: false });
+              return;
+            }
+
+            set({ address, isConnecting: false });
+            get().fetchBalance();
+          } catch (e: any) {
+            set({ error: e.message || "Signature request failed", isConnecting: false });
+          }
         }
       } else {
         set({ error: "Freighter wallet not installed.", isConnecting: false });
@@ -46,6 +84,7 @@ export const useWalletStore = create<WalletState>()(
   },
 
   disconnectWallet: () => {
+    signOut({ redirect: false });
     set({ address: null, balance: null, error: null });
   },
 

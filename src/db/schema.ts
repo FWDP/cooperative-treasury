@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { relations } from 'drizzle-orm';
 
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(), // We'll use the Stellar wallet address or UUID
@@ -46,3 +47,46 @@ export const auditLogs = sqliteTable("audit_logs", {
   txHash: text("tx_hash"), // If this action involved an on-chain transaction
   timestamp: integer("timestamp", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
+
+export const usersRelations = relations(users, ({ many }) => ({
+  memberships: many(treasuryMembers),
+}));
+
+export const treasuriesRelations = relations(treasuries, ({ many }) => ({
+  members: many(treasuryMembers),
+  proposals: many(proposals),
+}));
+
+export const treasuryMembersRelations = relations(treasuryMembers, ({ one }) => ({
+  treasury: one(treasuries, {
+    fields: [treasuryMembers.treasuryId],
+    references: [treasuries.id],
+  }),
+  user: one(users, {
+    fields: [treasuryMembers.userId],
+    references: [users.id],
+  }),
+}));
+
+export const proposalsRelations = relations(proposals, ({ one, many }) => ({
+  treasury: one(treasuries, {
+    fields: [proposals.treasuryId],
+    references: [treasuries.id],
+  }),
+  creator: one(users, {
+    fields: [proposals.creatorId],
+    references: [users.id],
+  }),
+  auditLogs: many(auditLogs),
+}));
+
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  proposal: one(proposals, {
+    fields: [auditLogs.proposalId],
+    references: [proposals.id],
+  }),
+  user: one(users, {
+    fields: [auditLogs.userId],
+    references: [users.id],
+  }),
+}));
